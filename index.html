@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TORQUEGUARD 3D - Intelligent Motor Stall Detection & Safe Recovery System</title>
+    <link rel="stylesheet" href="css/style.css">
+    
+    <!-- Three.js & OrbitControls (Self-Contained Local Library) -->
+    <script src="lib/three.min.js"></script>
+    <script src="lib/OrbitControls.js"></script>
+</head>
+<body>
+
+    <!-- ====================================================================
+         Top SCADA Navigation & Status Bar
+         ==================================================================== -->
+    <header class="scada-header">
+        <div class="brand-section">
+            <div class="brand-logo">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                </svg>
+            </div>
+            <div class="brand-title">
+                <h1>TORQUEGUARD 3D <span style="font-size:11px; font-weight:400; color:#38bdf8; background:#0b1d3a; padding:2px 8px; border-radius:4px; border:1px solid #1d4ed8;">SIMULATION TWIN</span></h1>
+                <div class="brand-subtitle">Industrial 24V DC Actuator Stall Detection, Overload Protection & Safe Recovery</div>
+            </div>
+        </div>
+
+        <div class="header-status-group">
+            <div class="status-badge">
+                <span class="pulse-dot green" id="main-heartbeat-dot"></span>
+                <span id="main-state-text">CELL STATUS: NORMAL</span>
+            </div>
+
+            <div class="header-actions">
+                <button class="btn-header" id="btn-thermal-toggle" title="Toggle FLIR False-Color Thermal Infrared Vision">
+                    &#128065; Thermal: OFF
+                </button>
+                <button class="btn-header" id="btn-audio-toggle" title="Mute or Unmute Industrial Synthesizer">
+                    &#128266; Audio: ON
+                </button>
+                <button class="btn-header btn-viva" id="btn-open-viva" title="Open Technical Viva Architecture & Embedded C Code">
+                    &#128214; Viva / Theory Explainer
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ====================================================================
+         Main Workspace Layout (3D Digital Twin Viewport + SCADA Sidebar)
+         ==================================================================== -->
+    <main class="main-workspace">
+        
+        <!-- Center-Left: Three.js 3D Viewport -->
+        <section class="viewport-panel">
+            <div id="canvas-container"></div>
+
+            <!-- Floating Camera Perspective Switcher -->
+            <div class="viewport-overlay-controls">
+                <button class="btn-cam active" id="cam-iso">&#127968; Overview</button>
+                <button class="btn-cam" id="cam-motor">&#9881; Motor & Gearbox</button>
+                <button class="btn-cam" id="cam-jam">&#128680; Jam Pinch Point</button>
+                <button class="btn-cam" id="cam-cabinet">&#128187; PLC Cabinet</button>
+                <button class="btn-cam" id="cam-top">&#128208; Top Plan</button>
+            </div>
+
+            <!-- Viewport Bottom HUD Info -->
+            <div class="viewport-hud">
+                <div class="hud-item">Actuator: <span>24V DC / 15:1 Ratio</span></div>
+                <div class="hud-item">Encoder: <span>1024 PPR Optical</span></div>
+                <div class="hud-item">Current Sense: <span>ACS712 Hall-Effect</span></div>
+                <div class="hud-item">Temp Sensor: <span>PT100 RTD Core</span></div>
+            </div>
+
+            <!-- Thermal Infrared Color Legend (Shows temperature scale) -->
+            <div class="thermal-legend" id="thermal-legend-card">
+                <div style="font-weight: bold; color: #94a3b8;">FLIR THERMAL SCALE</div>
+                <div class="thermal-bar"></div>
+                <div class="thermal-labels">
+                    <span>35°C</span>
+                    <span>50°C</span>
+                    <span>65°C</span>
+                    <span>80°C+</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Side: Industrial SCADA Telemetry & Control Tower -->
+        <aside class="scada-sidebar">
+
+            <!-- 1. System Health Score Bar -->
+            <div class="sidebar-section" style="padding: 10px 14px; background: #0c1424;">
+                <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:4px;">
+                    <span style="font-weight:700; color:#94a3b8;">ACTUATOR HEALTH SCORE</span>
+                    <span id="health-score-val" style="font-family:var(--font-mono); font-weight:700; color:#10b981;">100%</span>
+                </div>
+                <div class="meter-track" style="height:8px;">
+                    <div class="meter-fill" id="health-score-bar" style="width:100%; background-color:#10b981;"></div>
+                </div>
+            </div>
+
+            <!-- 2. Primary 4-Gauges Grid -->
+            <div class="sidebar-section">
+                <div class="section-header">
+                    <span class="section-title">
+                        <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 14.5v-2a1 1 0 00-2 0v2a1 1 0 002 0zm0-5.5a1 1 0 00-2 0v3a1 1 0 002 0v-3z"/></svg>
+                        Live Industrial Telemetry
+                    </span>
+                    <span style="font-size:10px; color:#38bdf8; font-family:var(--font-mono);">20 Hz MCU Task</span>
+                </div>
+
+                <div class="gauges-grid">
+                    <!-- Gauge 1: Current -->
+                    <div class="gauge-card">
+                        <div class="gauge-title">
+                            <span>Motor Current</span>
+                            <span style="color:#ef4444;">Crit &gt;6A</span>
+                        </div>
+                        <div class="gauge-value-row">
+                            <span class="gauge-value val-normal" id="val-current">2.42</span>
+                            <span class="gauge-unit">A</span>
+                        </div>
+                        <div class="meter-track">
+                            <div class="meter-fill fill-current" id="bar-current" style="width: 24%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Gauge 2: Temperature -->
+                    <div class="gauge-card">
+                        <div class="gauge-title">
+                            <span>Core Temp</span>
+                            <span style="color:#f59e0b;">Warn 65°C</span>
+                        </div>
+                        <div class="gauge-value-row">
+                            <span class="gauge-value val-normal" id="val-temperature">38.4</span>
+                            <span class="gauge-unit">°C</span>
+                        </div>
+                        <div class="meter-track">
+                            <div class="meter-fill fill-temp" id="bar-temperature" style="width: 28%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Gauge 3: Speed (RPM) -->
+                    <div class="gauge-card">
+                        <div class="gauge-title">
+                            <span>Conveyor Speed</span>
+                            <span>Target: 100</span>
+                        </div>
+                        <div class="gauge-value-row">
+                            <span class="gauge-value val-normal" id="val-rpm">100.0</span>
+                            <span class="gauge-unit">RPM</span>
+                        </div>
+                        <div class="meter-track">
+                            <div class="meter-fill fill-rpm" id="bar-rpm" style="width: 83%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Gauge 4: Position Error -->
+                    <div class="gauge-card">
+                        <div class="gauge-title">
+                            <span>Position Error</span>
+                            <span style="color:#ef4444;">Trip &gt;25%</span>
+                        </div>
+                        <div class="gauge-value-row">
+                            <span class="gauge-value val-normal" id="val-error">1.2</span>
+                            <span class="gauge-unit">%</span>
+                        </div>
+                        <div class="meter-track">
+                            <div class="meter-fill fill-error" id="bar-error" style="width: 2%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Intelligent Stall Detection Multi-Factor Gate Matrix -->
+            <div class="sidebar-section">
+                <div class="section-header">
+                    <span class="section-title">
+                        <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
+                        5-Factor Stall Detection Logic
+                    </span>
+                    <span style="font-size:10px; color:#10b981; font-weight:700;">Anti-Inrush Filter</span>
+                </div>
+
+                <div class="gate-matrix-card">
+                    <div class="decision-banner banner-normal" id="stall-decision-banner">
+                        <span class="pulse-dot green"></span> NORMAL OPERATION - INRUSH PROTECTED
+                    </div>
+
+                    <div class="gate-rows">
+                        <!-- Condition 1 -->
+                        <div class="gate-row gate-unmet" id="gate-c1">
+                            <div class="gate-left">
+                                <span class="gate-icon">&#9675;</span>
+                                <span class="gate-desc">1. Current &gt; 6.0 A</span>
+                            </div>
+                            <span class="gate-val">2.42A &gt; 6.0A</span>
+                        </div>
+
+                        <!-- Condition 2 -->
+                        <div class="gate-row gate-unmet" id="gate-c2">
+                            <div class="gate-left">
+                                <span class="gate-icon">&#9675;</span>
+                                <span class="gate-desc">2. Motor RPM &lt; 5.0</span>
+                            </div>
+                            <span class="gate-val">100.0 &lt; 5.0 RPM</span>
+                        </div>
+
+                        <!-- Condition 3 -->
+                        <div class="gate-row gate-unmet" id="gate-c3">
+                            <div class="gate-left">
+                                <span class="gate-icon">&#9675;</span>
+                                <span class="gate-desc">3. Encoder Motion == 0</span>
+                            </div>
+                            <span class="gate-val">1706 pulses/s</span>
+                        </div>
+
+                        <!-- Condition 4 -->
+                        <div class="gate-row gate-unmet" id="gate-c4">
+                            <div class="gate-left">
+                                <span class="gate-icon">&#9675;</span>
+                                <span class="gate-desc">4. Position Error &gt; 25%</span>
+                            </div>
+                            <span class="gate-val">1.2% &gt; 25%</span>
+                        </div>
+                    </div>
+
+                    <!-- Condition 5: Debounce / Persistence Progress -->
+                    <div class="persistence-box">
+                        <div class="persistence-header">
+                            <span>5. Persistence Debounce Timer (3.0s Filter)</span>
+                            <span id="persistence-label" style="font-family:var(--font-mono); font-weight:bold;">0.0s / 3.0s</span>
+                        </div>
+                        <div class="meter-track">
+                            <div class="meter-fill" id="persistence-progress" style="width: 0%; background: linear-gradient(90deg, #f59e0b, #ef4444);"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. State Machine Visualizer & Auto-Recovery Controller -->
+            <div class="sidebar-section">
+                <div class="section-header">
+                    <span class="section-title">
+                        <svg viewBox="0 0 24 24"><path d="M4 4h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4zM4 10h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4zM4 16h4v4H4zm6 0h4v4h-4zm6 0h4v4h-4z"/></svg>
+                        FSM State & Safe Recovery Controller
+                    </span>
+                </div>
+
+                <div class="fsm-visualizer">
+                    <div class="fsm-node fsm-active" id="fsm-normal">NORMAL</div>
+                    <span class="fsm-arrow">&rarr;</span>
+                    <div class="fsm-node" id="fsm-suspect">SUSPECT</div>
+                    <span class="fsm-arrow">&rarr;</span>
+                    <div class="fsm-node" id="fsm-stall">STALL</div>
+                    <span class="fsm-arrow">&rarr;</span>
+                    <div class="fsm-node" id="fsm-recovery">RECOVERY</div>
+                    <span class="fsm-arrow">&rarr;</span>
+                    <div class="fsm-node" id="fsm-lockout">LOCKOUT</div>
+                </div>
+
+                <!-- Recovery Sequence Active Details -->
+                <div class="recovery-steps-card" id="recovery-steps-card" style="display:none;">
+                    <div class="rec-header">
+                        <span id="rec-attempt-num">Attempt 1 of 3</span>
+                        <span>5-STEP INDUSTRIAL PROTOCOL</span>
+                    </div>
+                    <div class="rec-desc" id="rec-phase-desc">Step 1: Immediate PWM Cut (Contactor Tripped)</div>
+                </div>
+            </div>
+
+            <!-- 5. Optical Rotary Encoder Diagnostics -->
+            <div class="sidebar-section">
+                <div class="section-header">
+                    <span class="section-title">
+                        <svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0020 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 004 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+                        Optical Rotary Encoder Feedback
+                    </span>
+                    <span style="font-size:10px; color:#38bdf8;">TIM2 QEI Interface</span>
+                </div>
+
+                <div class="encoder-grid">
+                    <div class="enc-stat">
+                        <div class="enc-label">Cumulative Pulses</div>
+                        <div class="enc-val" id="enc-pulses">0</div>
+                    </div>
+                    <div class="enc-stat">
+                        <div class="enc-label">Pulse Frequency</div>
+                        <div class="enc-val" id="enc-freq">1706 Hz</div>
+                    </div>
+                    <div class="enc-stat">
+                        <div class="enc-label">Linear Travel</div>
+                        <div class="enc-val" id="enc-distance">0.00 m</div>
+                    </div>
+                </div>
+
+                <div class="phase-leds">
+                    <div class="phase-item">
+                        <span>Direction:</span>
+                        <span class="enc-dir fwd" id="enc-dir" style="font-weight:bold;">FORWARD</span>
+                    </div>
+                    <div class="phase-item">
+                        <div class="phase-led led-on" id="enc-cha"></div>
+                        <span>Ch-A (0°)</span>
+                    </div>
+                    <div class="phase-item">
+                        <div class="phase-led led-off" id="enc-chb"></div>
+                        <span>Ch-B (90°)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. Real-Time Multi-Trace Oscilloscope -->
+            <div class="sidebar-section">
+                <div class="section-header">
+                    <span class="section-title">
+                        <svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
+                        Real-Time Oscilloscope Traces
+                    </span>
+                    <span style="font-size:10px; color:#94a3b8;">Rolling 120 Samples</span>
+                </div>
+
+                <div class="oscilloscope-container">
+                    <canvas id="scada-oscilloscope" width="410" height="140"></canvas>
+                    <div class="osc-legend">
+                        <div class="legend-item"><div class="legend-dot" style="background:#06b6d4;"></div><span>Current (A)</span></div>
+                        <div class="legend-item"><div class="legend-dot" style="background:#f43f5e;"></div><span>Temp (°C)</span></div>
+                        <div class="legend-item"><div class="legend-dot" style="background:#10b981;"></div><span>RPM</span></div>
+                        <div class="legend-item"><div class="legend-dot" style="background:#f59e0b;"></div><span>Error (%)</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 7. Viva Demonstration Presets (1-Click Review Scenarios) -->
+            <div class="sidebar-section">
+                <div class="section-header">
+                    <span class="section-title">
+                        <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                        Viva Demonstration Scenarios
+                    </span>
+                    <span style="font-size:10px; color:#a78bfa; font-weight:bold;">Review Modes</span>
+                </div>
+
+                <div class="demo-buttons-grid">
+                    <button class="btn-demo" id="demo-1">
+                        <div class="demo-title">&#9654; Demo 1: Normal Run</div>
+                        <div class="demo-desc">Nominal 100 RPM, 2.4A. Inrush spike safely rejected by filter.</div>
+                    </button>
+
+                    <button class="btn-demo" id="demo-2">
+                        <div class="demo-title">&#9654; Demo 2: Heavy Load</div>
+                        <div class="demo-desc">45kg load, current rises to 4.2A, 70 RPM. Zero false alarms!</div>
+                    </button>
+
+                    <button class="btn-demo" id="demo-3">
+                        <div class="demo-title">&#9654; Demo 3: Auto-Recovery</div>
+                        <div class="demo-desc">Box jams, 3s debounce confirms stall, reverses 1s to eject jam.</div>
+                    </button>
+
+                    <button class="btn-demo" id="demo-4">
+                        <div class="demo-title">&#9654; Demo 4: Lockout 3x</div>
+                        <div class="demo-desc">Hard permanent jam, 3 recovery retries fail, siren &amp; lockout!</div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 8. Interactive Control Deck & Fault Injection -->
+            <div class="sidebar-section">
+                <div class="section-header">
+                    <span class="section-title">
+                        <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+                        Manual Fault Injection Deck
+                    </span>
+                </div>
+
+                <div class="controls-grid">
+                    <button class="btn-ctrl btn-jam-inject" id="btn-inject-jam">&#9888; Inject Jam</button>
+                    <button class="btn-ctrl btn-jam-remove" id="btn-remove-jam">&#10004; Clear Jam</button>
+                    <button class="btn-ctrl" id="btn-heavy-load">&#128230; Heavy Load (45kg)</button>
+                    <button class="btn-ctrl active" id="btn-normal-load">&#128230; Normal Load (8kg)</button>
+                </div>
+
+                <!-- Industrial Mushroom E-STOP & Manual Reset -->
+                <div class="estop-wrapper">
+                    <button class="btn-estop" id="btn-estop">&#128721; EMERGENCY STOP</button>
+                    <button class="btn-reset" id="btn-reset">&#8635; RESET CELL</button>
+                </div>
+            </div>
+
+            <!-- 9. SCADA Event Log & Alarm Annunciator -->
+            <div class="sidebar-section" style="border-bottom:none;">
+                <div class="section-header">
+                    <span class="section-title">
+                        <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+                        SCADA Event &amp; Alarm Log
+                    </span>
+                    <div class="log-actions">
+                        <button class="btn-log-action" id="btn-export-log">Export CSV</button>
+                        <button class="btn-log-action" id="btn-clear-log">Clear</button>
+                    </div>
+                </div>
+
+                <div class="event-log-container" id="event-log-body">
+                    <!-- Dynamic log rows generated here -->
+                </div>
+            </div>
+
+        </aside>
+    </main>
+
+    <!-- ====================================================================
+         Viva Technical Architecture & Embedded Systems Modal
+         ==================================================================== -->
+    <div class="modal-overlay" id="viva-modal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <h2>TORQUEGUARD 3D: Embedded Systems Technical Architecture</h2>
+                    <div class="modal-subtitle">Project Viva Reference: Mathematical Models, RTOS Tasks &amp; Anti-Inrush Debounce Firmware</div>
+                </div>
+                <button class="modal-close" id="btn-close-viva">&times;</button>
+            </div>
+
+            <div class="modal-tabs">
+                <button class="tab-btn active" id="tab-btn-code">Embedded C Firmware</button>
+                <button class="tab-btn" id="tab-btn-theory">Control Theory &amp; Math</button>
+                <button class="tab-btn" id="tab-btn-architecture">MCU Hardware Architecture</button>
+            </div>
+
+            <div class="modal-content-area">
+                <!-- Tab 1: Embedded C Firmware -->
+                <div class="tab-pane active" id="tab-pane-code">
+                    <p style="margin-bottom:10px; color:#94a3b8;">
+                        Target MCU: <strong>STM32F401 / ESP32 Industrial Node</strong>. Below is the production-grade embedded C state machine implementation executing inside a 100Hz FreeRTOS task with hardware timer debouncing:
+                    </p>
+                    <div class="code-block">/* ====================================================================
+ * TORQUEGUARD Embedded Firmware Core - Stall Detection & Safe Recovery
+ * Target: STM32F4 / ARM Cortex-M4 @ 84MHz (FreeRTOS)
+ * ==================================================================== */
+
+#include "stm32f4xx_hal.h"
+#include "FreeRTOS.h"
+#include "task.h"
+
+typedef enum {
+    STATE_NORMAL,
+    STATE_SUSPECT,
+    STATE_STALL_CONFIRMED,
+    STATE_RECOVERY,
+    STATE_LOCKOUT
+} TorqueGuardState_t;
+
+static TorqueGuardState_t g_systemState = STATE_NORMAL;
+static uint32_t g_stallPersistenceCount = 0;
+static uint8_t  g_recoveryAttempts = 0;
+
+#define STALL_CURRENT_THRESHOLD_MA   6000  // 6.0A in mA
+#define STALL_RPM_THRESHOLD          5     // &lt; 5 RPM
+#define STALL_POS_ERROR_THRESHOLD    25    // &gt; 25% Error
+#define DEBOUNCE_TICKS_3SEC          300   // 300 ticks @ 10ms task = 3.0 seconds
+
+void vTaskStallDetection(void *pvParameters) {
+    TickType_t xLastWakeTime = xTaskGetTickCount();
+    
+    for (;;) {
+        // 1. Read Current from ADC via DMA (ACS712 Hall Sensor)
+        uint32_t current_mA = ADC_GetCurrent_mA();
+        
+        // 2. Read Optical Encoder Speed from TIM2 32-bit QEI peripheral
+        uint32_t currentTicks = __HAL_TIM_GET_COUNTER(&amp;htim2);
+        int32_t  actualRPM   = Calculate_Encoder_RPM(currentTicks);
+        int32_t  targetRPM   = Get_Commanded_RPM();
+        
+        // 3. Compute Position Error Percentage
+        int32_t posError = (targetRPM &gt; 0) ? ((targetRPM - actualRPM) * 100) / targetRPM : 0;
+
+        // 4. Evaluate 5-Criteria Multi-Factor Stall Gate
+        bool c1_currentHigh    = (current_mA &gt; STALL_CURRENT_THRESHOLD_MA);
+        bool c2_rpmLow         = (actualRPM &lt; STALL_RPM_THRESHOLD);
+        bool c3_encoderStatic  = (actualRPM == 0);
+        bool c4_posErrorHigh   = (posError &gt; STALL_POS_ERROR_THRESHOLD);
+
+        bool instantaneousStall = c1_currentHigh &amp;&amp; c2_rpmLow &amp;&amp; c3_encoderStatic &amp;&amp; c4_posErrorHigh;
+
+        // 5. Anti-Inrush Debounce Filter (Criterion 5: 3.0s Persistence)
+        if (instantaneousStall) {
+            g_stallPersistenceCount++;
+            if (g_systemState == STATE_NORMAL) {
+                g_systemState = STATE_SUSPECT;
+                HAL_GPIO_WritePin(WARN_LED_PORT, WARN_LED_PIN, GPIO_PIN_SET);
+            }
+            if (g_stallPersistenceCount &gt;= DEBOUNCE_TICKS_3SEC) {
+                // CONFIRMED STALL - Prevent Inrush False Alarm!
+                g_systemState = STATE_STALL_CONFIRMED;
+                Execute_Protective_Recovery();
+            }
+        } else {
+            // Transient cleared (e.g. startup inrush completed within 300ms)
+            if (g_stallPersistenceCount &gt; 0) g_stallPersistenceCount--;
+            if (g_systemState == STATE_SUSPECT &amp;&amp; g_stallPersistenceCount == 0) {
+                g_systemState = STATE_NORMAL;
+                HAL_GPIO_WritePin(WARN_LED_PORT, WARN_LED_PIN, GPIO_PIN_RESET);
+            }
+        }
+
+        vTaskDelayUntil(&amp;xLastWakeTime, pdMS_TO_TICKS(10)); // 100Hz loop
+    }
+}</div>
+                </div>
+
+                <!-- Tab 2: Control Theory & Math -->
+                <div class="tab-pane" id="tab-pane-theory">
+                    <div class="formula-card">
+                        <h4>1. DC Motor Dynamic Equations (Why Inrush Occurs)</h4>
+                        <div class="math-eq">V(t) = I(t) &middot; R_a + L_a &middot; \frac{dI}{dt} + K_e &middot; &omega;(t)</div>
+                        <p>At startup or locked-rotor stall, rotor angular velocity &omega; = 0. Therefore, Back-EMF (K_e &middot; &omega;) is exactly 0V! The full bus voltage is applied across the armature resistance (R_a = 1.2&Omega;), causing a huge current spike (I = V / R_a &approx; 7.5A). Naive current sensors immediately trip, creating false alarms. TorqueGuard avoids this by enforcing the 3.0s persistence duration!</p>
+                    </div>
+
+                    <div class="formula-card">
+                        <h4>2. Lumped Parameter Thermal Dynamics (Joule Heating ODE)</h4>
+                        <div class="math-eq">\frac{dT_{motor}}{dt} = \frac{I(t)^2 &middot; R_a}{C_{th}} - \frac{T_{motor} - T_{ambient}}{R_{th} &middot; C_{th}}</div>
+                        <p>Joule dissipation scales quadratically with current (I&sup2;). Under 2.4A normal load, heat generation is 6.9 Watts. Under 7.4A locked stall, heat generation surges to 65.7 Watts (a 950% increase!). Furthermore, convective air cooling halts because the internal fan stops spinning, leading to exponential temperature runaway.</p>
+                    </div>
+
+                    <div class="formula-card">
+                        <h4>3. Quadrature Optical Encoder Position Error</h4>
+                        <div class="math-eq">E_{pos} = \frac{|\omega_{target} - \omega_{actual}|}{\omega_{target}} \times 100\%</div>
+                        <p>Enables differentiation between heavy payload drag (&omega; &approx; 70 RPM, Error &approx; 15%) versus total mechanical seizure (&omega; = 0 RPM, Error = 100%).</p>
+                    </div>
+                </div>
+
+                <!-- Tab 3: MCU Hardware Architecture -->
+                <div class="tab-pane" id="tab-pane-architecture">
+                    <div class="formula-card">
+                        <h4>Embedded Microcontroller Peripheral Mapping</h4>
+                        <ul style="padding-left: 20px; margin-top: 8px;">
+                            <li><strong>MCU Core:</strong> ARM Cortex-M4 32-bit RISC with Hardware FPU (Floating Point Unit) @ 84MHz.</li>
+                            <li><strong>TIM1 Advanced Timer:</strong> 20kHz Complementary PWM with Dead-Time Insertion driving Dual H-Bridge MOSFET gate drivers (VNH5019 / L6203).</li>
+                            <li><strong>TIM2 General Purpose Timer:</strong> Configured in 32-bit Quadrature Encoder Interface (QEI) mode decoding Channel A &amp; B pulses from Omron 1024 PPR optical encoder without CPU overhead.</li>
+                            <li><strong>ADC1 + DMA:</strong> Continuous 12-bit circular DMA sampling of ACS712 Hall-Effect current sensor with 16x hardware oversampling filter.</li>
+                            <li><strong>SPI1 Peripheral:</strong> Communicates with MAX31865 RTD amplifier digitizing PT100 platinum temperature probe to 0.03°C resolution.</li>
+                            <li><strong>Safety Relay Contactor:</strong> Hardware-latched independent safety coil in series with main DC bus, triggered immediately on LOCKOUT or E-STOP.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Initialization Scripts (Loaded in strict sequence) -->
+    <script src="js/config.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/physics.js"></script>
+    <script src="js/state_machine.js"></script>
+    <script src="js/scene.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

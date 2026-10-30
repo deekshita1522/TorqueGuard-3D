@@ -1,0 +1,1041 @@
+/* ==========================================================================
+   TORQUEGUARD 3D - SCADA Industrial Dark Theme
+   Siemens WinCC & Rockwell FactoryTalk Inspired Digital Twin Interface
+   ========================================================================== */
+
+:root {
+    --bg-main: #070c16;
+    --bg-panel: #0d1527;
+    --bg-card: #131e34;
+    --bg-card-hover: #192742;
+    --border-color: #1e2d4a;
+    --border-glow: #2563eb;
+    
+    --color-normal: #10b981;
+    --color-suspect: #f59e0b;
+    --color-stall: #f97316;
+    --color-lockout: #ef4444;
+    --color-recovery: #3b82f6;
+    --color-cyan: #06b6d4;
+    
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    
+    --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-mono: "SF Mono", "JetBrains Mono", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    font-family: var(--font-ui);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* --------------------------------------------------------------------------
+   Top SCADA Navigation & Status Bar
+   -------------------------------------------------------------------------- */
+.scada-header {
+    height: 52px;
+    background: linear-gradient(180deg, #131e34 0%, #0d1527 100%);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    z-index: 20;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+}
+
+.brand-section {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.brand-logo {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 12px rgba(37, 99, 235, 0.5);
+}
+
+.brand-logo svg {
+    width: 20px;
+    height: 20px;
+    fill: #ffffff;
+}
+
+.brand-title h1 {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.brand-subtitle {
+    font-size: 11px;
+    color: var(--text-secondary);
+    letter-spacing: 0.3px;
+}
+
+.header-status-group {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.status-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #0b1120;
+    border: 1px solid var(--border-color);
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    animation: blink 1.2s infinite ease-in-out;
+}
+
+.pulse-dot.green { background-color: var(--color-normal); box-shadow: 0 0 8px var(--color-normal); }
+.pulse-dot.yellow { background-color: var(--color-suspect); box-shadow: 0 0 8px var(--color-suspect); }
+.pulse-dot.orange { background-color: var(--color-stall); box-shadow: 0 0 8px var(--color-stall); }
+.pulse-dot.red { background-color: var(--color-lockout); box-shadow: 0 0 8px var(--color-lockout); }
+.pulse-dot.blue { background-color: var(--color-recovery); box-shadow: 0 0 8px var(--color-recovery); }
+
+@keyframes blink {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-header {
+    background-color: #1e293b;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-header:hover {
+    background-color: #334155;
+    border-color: #38bdf8;
+}
+
+.btn-header.active {
+    background: #0284c7;
+    border-color: #38bdf8;
+    color: white;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+}
+
+.btn-viva {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    border: 1px solid #a78bfa;
+    color: white;
+    box-shadow: 0 0 12px rgba(124, 58, 237, 0.4);
+}
+
+.btn-viva:hover {
+    background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
+    box-shadow: 0 0 16px rgba(124, 58, 237, 0.6);
+}
+
+/* --------------------------------------------------------------------------
+   Main Workspace Layout: 3D Viewport + Right SCADA Tower
+   -------------------------------------------------------------------------- */
+.main-workspace {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Center-Left 3D Canvas Area */
+.viewport-panel {
+    flex: 1;
+    position: relative;
+    background-color: #0b111e;
+    overflow: hidden;
+}
+
+#canvas-container {
+    width: 100%;
+    height: 100%;
+    outline: none;
+}
+
+/* 3D Viewport Floating Overlay Controls */
+.viewport-overlay-controls {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    display: flex;
+    gap: 6px;
+    background-color: rgba(13, 21, 39, 0.85);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--border-color);
+    padding: 4px;
+    border-radius: 8px;
+    z-index: 10;
+}
+
+.btn-cam {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 6px 10px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-cam:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+.btn-cam.active {
+    background-color: #0284c7;
+    color: white;
+}
+
+/* Viewport Info Pill */
+.viewport-hud {
+    position: absolute;
+    bottom: 14px;
+    left: 14px;
+    background-color: rgba(13, 21, 39, 0.85);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--border-color);
+    padding: 8px 14px;
+    border-radius: 8px;
+    z-index: 10;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-secondary);
+    display: flex;
+    gap: 16px;
+}
+
+.hud-item span {
+    color: #38bdf8;
+    font-weight: bold;
+}
+
+/* Thermal FLIR Scale Bar */
+.thermal-legend {
+    position: absolute;
+    bottom: 14px;
+    right: 14px;
+    background-color: rgba(13, 21, 39, 0.85);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--border-color);
+    padding: 6px 12px;
+    border-radius: 8px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 10px;
+}
+
+.thermal-bar {
+    width: 140px;
+    height: 10px;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #1d4ed8 0%, #10b981 35%, #facc15 65%, #ef4444 85%, #ffffff 100%);
+}
+
+.thermal-labels {
+    display: flex;
+    justify-content: space-between;
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+}
+
+/* --------------------------------------------------------------------------
+   Right SCADA Telemetry & Control Tower
+   -------------------------------------------------------------------------- */
+.scada-sidebar {
+    width: 440px;
+    background-color: var(--bg-panel);
+    border-left: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+    z-index: 15;
+}
+
+.scada-sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.scada-sidebar::-webkit-scrollbar-track {
+    background: var(--bg-panel);
+}
+
+.scada-sidebar::-webkit-scrollbar-thumb {
+    background: #1e293b;
+    border-radius: 3px;
+}
+
+.sidebar-section {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.section-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.section-title svg {
+    width: 14px;
+    height: 14px;
+    fill: var(--text-secondary);
+}
+
+/* --------------------------------------------------------------------------
+   Gauges 4-Grid
+   -------------------------------------------------------------------------- */
+.gauges-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.gauge-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.gauge-title {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    display: flex;
+    justify-content: space-between;
+}
+
+.gauge-value-row {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    margin: 4px 0 6px 0;
+}
+
+.gauge-value {
+    font-size: 24px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    line-height: 1;
+}
+
+.gauge-unit {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.val-normal { color: var(--color-normal); }
+.val-warning { color: var(--color-suspect); }
+.val-critical { color: var(--color-lockout); }
+
+.meter-track {
+    width: 100%;
+    height: 6px;
+    background-color: #0b1120;
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+}
+
+.meter-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.15s ease-out;
+}
+
+.fill-current { background: linear-gradient(90deg, #10b981 0%, #f59e0b 60%, #ef4444 80%); }
+.fill-temp { background: linear-gradient(90deg, #3b82f6 0%, #10b981 40%, #f59e0b 70%, #ef4444 90%); }
+.fill-rpm { background: linear-gradient(90deg, #ef4444 0%, #10b981 60%); }
+.fill-error { background: linear-gradient(90deg, #10b981 0%, #f59e0b 30%, #ef4444 70%); }
+
+/* --------------------------------------------------------------------------
+   5-Factor Stall Gate Matrix
+   -------------------------------------------------------------------------- */
+.gate-matrix-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.decision-banner {
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.banner-normal { background-color: rgba(16, 185, 129, 0.15); border: 1px solid var(--color-normal); color: var(--color-normal); }
+.banner-suspect { background-color: rgba(245, 158, 11, 0.15); border: 1px solid var(--color-suspect); color: var(--color-suspect); }
+.banner-stall { background-color: rgba(249, 115, 22, 0.15); border: 1px solid var(--color-stall); color: var(--color-stall); }
+.banner-recovery { background-color: rgba(59, 130, 246, 0.15); border: 1px solid var(--color-recovery); color: var(--color-recovery); }
+.banner-lockout { background-color: rgba(239, 68, 68, 0.2); border: 1px solid var(--color-lockout); color: var(--color-lockout); }
+
+.gate-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.gate-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 8px;
+    background-color: #0b1120;
+    border-radius: 5px;
+    font-size: 11px;
+    border: 1px solid transparent;
+}
+
+.gate-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.gate-icon {
+    font-weight: bold;
+    font-size: 13px;
+    width: 14px;
+    text-align: center;
+}
+
+.gate-desc {
+    color: var(--text-primary);
+}
+
+.gate-val {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 600;
+}
+
+.gate-unmet {
+    border-color: #1e293b;
+}
+
+.gate-unmet .gate-icon { color: var(--text-muted); }
+.gate-unmet .gate-val { color: var(--text-secondary); }
+
+.gate-met {
+    border-color: rgba(249, 115, 22, 0.4);
+    background-color: rgba(249, 115, 22, 0.08);
+}
+
+.gate-met .gate-icon { color: var(--color-stall); }
+.gate-met .gate-val { color: var(--color-stall); font-weight: bold; }
+
+.persistence-box {
+    margin-top: 6px;
+    padding: 6px 8px;
+    background-color: #090e1a;
+    border-radius: 5px;
+    border: 1px solid #1e293b;
+}
+
+.persistence-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10.5px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+/* --------------------------------------------------------------------------
+   FSM State Visualizer
+   -------------------------------------------------------------------------- */
+.fsm-visualizer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    padding: 6px 0;
+}
+
+.fsm-node {
+    background-color: #0b1120;
+    border: 1px solid var(--border-color);
+    padding: 5px 8px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    text-align: center;
+    color: var(--text-muted);
+    transition: all 0.3s;
+    z-index: 2;
+}
+
+.fsm-arrow {
+    color: #334155;
+    font-size: 12px;
+}
+
+.fsm-node.fsm-active#fsm-normal { border-color: var(--color-normal); color: var(--color-normal); box-shadow: 0 0 10px rgba(16, 185, 129, 0.5); }
+.fsm-node.fsm-active#fsm-suspect { border-color: var(--color-suspect); color: var(--color-suspect); box-shadow: 0 0 10px rgba(245, 158, 11, 0.5); }
+.fsm-node.fsm-active#fsm-stall { border-color: var(--color-stall); color: var(--color-stall); box-shadow: 0 0 10px rgba(249, 115, 22, 0.5); }
+.fsm-node.fsm-active#fsm-recovery { border-color: var(--color-recovery); color: var(--color-recovery); box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); }
+.fsm-node.fsm-active#fsm-lockout { border-color: var(--color-lockout); color: var(--color-lockout); box-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
+
+.recovery-steps-card {
+    margin-top: 8px;
+    background-color: rgba(59, 130, 246, 0.1);
+    border: 1px solid var(--color-recovery);
+    border-radius: 6px;
+    padding: 8px 10px;
+}
+
+.rec-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    font-weight: 700;
+    color: #60a5fa;
+    margin-bottom: 4px;
+}
+
+.rec-desc {
+    font-size: 11px;
+    color: var(--text-primary);
+}
+
+/* --------------------------------------------------------------------------
+   Encoder & Telemetry Details
+   -------------------------------------------------------------------------- */
+.encoder-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.enc-stat {
+    background-color: #0b1120;
+    border: 1px solid var(--border-color);
+    padding: 6px 8px;
+    border-radius: 6px;
+}
+
+.enc-label {
+    font-size: 9.5px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.enc-val {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 700;
+    color: #38bdf8;
+    margin-top: 2px;
+}
+
+.enc-dir.fwd { color: var(--color-normal); }
+.enc-dir.rev { color: var(--color-recovery); }
+.enc-dir.stop { color: var(--text-muted); }
+
+.phase-leds {
+    display: flex;
+    gap: 12px;
+    background-color: #0b1120;
+    border: 1px solid var(--border-color);
+    padding: 6px 10px;
+    border-radius: 6px;
+    align-items: center;
+}
+
+.phase-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10.5px;
+    color: var(--text-secondary);
+}
+
+.phase-led {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.phase-led.led-on { background-color: #10b981; box-shadow: 0 0 6px #10b981; }
+.phase-led.led-off { background-color: #1e293b; }
+
+/* --------------------------------------------------------------------------
+   Real-Time Oscilloscope
+   -------------------------------------------------------------------------- */
+.oscilloscope-container {
+    background-color: #0a0f1d;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+}
+
+#scada-oscilloscope {
+    width: 100%;
+    height: 140px;
+    display: block;
+}
+
+.osc-legend {
+    display: flex;
+    justify-content: space-around;
+    padding: 6px 8px;
+    background-color: #0d1527;
+    border-top: 1px solid var(--border-color);
+    font-size: 10px;
+    font-family: var(--font-mono);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   Demo Scenarios (Viva 1-Click Buttons)
+   -------------------------------------------------------------------------- */
+.demo-buttons-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.btn-demo {
+    background-color: #131e34;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 8px;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text-primary);
+}
+
+.btn-demo:hover {
+    background-color: #1e2d4a;
+    border-color: #38bdf8;
+    transform: translateY(-1px);
+}
+
+.demo-title {
+    font-size: 11.5px;
+    font-weight: 700;
+    margin-bottom: 2px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.demo-desc {
+    font-size: 10px;
+    color: var(--text-secondary);
+    line-height: 1.25;
+}
+
+/* --------------------------------------------------------------------------
+   Interactive Controls & Fault Injection Deck
+   -------------------------------------------------------------------------- */
+.controls-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.btn-ctrl {
+    background-color: #1e293b;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+}
+
+.btn-ctrl:hover {
+    background-color: #334155;
+    border-color: #38bdf8;
+}
+
+.btn-ctrl.active {
+    background-color: #0284c7;
+    border-color: #38bdf8;
+    color: white;
+}
+
+.btn-jam-inject {
+    background: linear-gradient(180deg, #ea580c 0%, #c2410c 100%);
+    border-color: #f97316;
+    color: white;
+}
+
+.btn-jam-inject:hover {
+    background: linear-gradient(180deg, #f97316 0%, #ea580c 100%);
+}
+
+.btn-jam-remove {
+    background: linear-gradient(180deg, #059669 0%, #047857 100%);
+    border-color: #10b981;
+    color: white;
+}
+
+.btn-jam-remove:hover {
+    background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+}
+
+/* Big Industrial Mushroom E-STOP */
+.estop-wrapper {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-estop {
+    flex: 2;
+    background: radial-gradient(circle at 35% 35%, #ef4444 0%, #b91c1c 70%, #7f1d1d 100%);
+    border: 2px solid #fecaca;
+    border-radius: 8px;
+    color: white;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    padding: 10px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(220, 38, 38, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+    transition: all 0.1s ease;
+}
+
+.btn-estop:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 4px rgba(220, 38, 38, 0.5);
+}
+
+.btn-reset {
+    flex: 1;
+    background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+    border: 1px solid #60a5fa;
+    color: white;
+    font-size: 11.5px;
+    font-weight: 700;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+}
+
+/* --------------------------------------------------------------------------
+   SCADA Event Log & Alarm Annunciator
+   -------------------------------------------------------------------------- */
+.log-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.btn-log-action {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    cursor: pointer;
+}
+
+.btn-log-action:hover {
+    background: #1e293b;
+    color: var(--text-primary);
+}
+
+.event-log-container {
+    height: 130px;
+    overflow-y: auto;
+    background-color: #080d1a;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 6px;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.event-log-container::-webkit-scrollbar {
+    width: 4px;
+}
+
+.event-log-container::-webkit-scrollbar-thumb {
+    background: #1e293b;
+}
+
+.log-row {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    padding: 2px 4px;
+    border-radius: 3px;
+    line-height: 1.35;
+}
+
+.log-time {
+    color: var(--text-muted);
+    font-size: 9.5px;
+    flex-shrink: 0;
+}
+
+.log-level {
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+.badge-info { background: #0369a1; color: white; }
+.badge-warning { background: #b45309; color: white; }
+.badge-critical { background: #b91c1c; color: white; }
+.badge-recovery { background: #4338ca; color: white; }
+
+.log-msg {
+    color: var(--text-primary);
+    word-break: break-word;
+}
+
+/* --------------------------------------------------------------------------
+   Technical Viva Modal
+   -------------------------------------------------------------------------- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(5, 10, 20, 0.85);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+
+.modal-overlay.modal-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-box {
+    width: 820px;
+    max-width: 92vw;
+    max-height: 86vh;
+    background-color: var(--bg-panel);
+    border: 1px solid #3b82f6;
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.3);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.modal-header {
+    padding: 14px 20px;
+    background: linear-gradient(90deg, #131e34 0%, #1e293b 100%);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-title h2 {
+    font-size: 16px;
+    font-weight: 700;
+    color: white;
+}
+
+.modal-subtitle {
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.modal-close {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.modal-close:hover {
+    color: white;
+}
+
+.modal-tabs {
+    display: flex;
+    background-color: #0b1120;
+    border-bottom: 1px solid var(--border-color);
+    padding: 0 16px;
+}
+
+.tab-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 10px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+}
+
+.tab-btn.active {
+    color: #38bdf8;
+    border-bottom-color: #38bdf8;
+}
+
+.modal-content-area {
+    padding: 18px 22px;
+    overflow-y: auto;
+    flex: 1;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-primary);
+}
+
+.tab-pane {
+    display: none;
+}
+
+.tab-pane.active {
+    display: block;
+}
+
+.code-block {
+    background-color: #080d1a;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 14px;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: #e2e8f0;
+    overflow-x: auto;
+    white-space: pre;
+    line-height: 1.5;
+}
+
+.formula-card {
+    background-color: #131e34;
+    border: 1px solid var(--border-color);
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+}
+
+.formula-card h4 {
+    font-size: 13px;
+    color: #38bdf8;
+    margin-bottom: 6px;
+}
+
+.math-eq {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: bold;
+    color: #facc15;
+    background: #090e1a;
+    padding: 6px 12px;
+    border-radius: 4px;
+    display: inline-block;
+    margin: 4px 0 8px 0;
+}
